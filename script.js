@@ -31,8 +31,8 @@ async function profNew(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let c='';for
  try{await api(`turmas/${c}/meta`,'PUT',{estado:'espera'})}catch(e){$('#dbMsg').textContent='Não consegui acessar o banco. Confira a URL e as regras.';$('#dbUrl').value=DB;show('setup');return}
  PR={c};const u=location.href.split(/[?#]/)[0]+'?sala='+c+(DB?'&db='+encodeURIComponent(DB):'');
  $('#pCode').textContent=c;$('#pLink').textContent=u;$('#pLink').href=u;$('#pqr').innerHTML='';
- const w=[];if(!DB)w.push('Modo teste: funciona só neste computador (abra o link em outra aba).');if(location.protocol==='file:')w.push('Publique o jogo (ex.: GitHub Pages) para os alunos abrirem o link.');$('#pWarn').innerHTML=w.join('<br>');
- if(window.QRCode)new QRCode($('#pqr'),{text:u,width:200,height:200});
+ const w=[];if(!DB)w.push('⚠️ MODO TESTE: celulares NÃO conseguem entrar. Clique em “⚙ Banco de dados” e configure o Firebase.');if(location.protocol==='file:')w.push('Publique o jogo (ex.: GitHub Pages) para os alunos abrirem o link.');$('#pWarn').innerHTML=w.join('<br>');
+ if(DB&&window.QRCode)new QRCode($('#pqr'),{text:u,width:200,height:200});
  show('prof');profTick();TM=setInterval(profTick,2000)}
 async function profTick(){if(!PR)return;try{const d=await api('turmas/'+PR.c,'GET')||{},E=sorted(d.alunos),est=(d.meta||{}).estado||'espera';
  $('#pEst').textContent={espera:'⏳ Aguardando início',andamento:'🟢 Quiz em andamento',fim:'🏁 Quiz encerrado'}[est];
@@ -43,14 +43,14 @@ $('#pStart').onclick=()=>setEst('andamento');$('#pEnd').onclick=()=>setEst('fim'
 $('#pCfg').onclick=()=>{$('#dbUrl').value=DB;show('setup')};
 $('#dbSave').onclick=()=>{const u=clean($('#dbUrl').value);if(!okDb(u)){$('#dbMsg').textContent='URL inválida: deve terminar em firebaseio.com ou firebasedatabase.app.';return}DB=u;localStorage.setItem('mpDb',u);profNew()};
 $('#dbTest').onclick=()=>{DB='';localStorage.removeItem('mpDb');localStorage.mpTest='1';profNew()};
-$('#bProf').onclick=()=>DB||localStorage.mpTest?profNew():show('setup');
+$('#bProf').onclick=()=>DB?profNew():show('setup');
 
 // ===== Aluno =====
 function order(s){let a=[...s].reduce((x,c)=>(x*31+c.charCodeAt(0))>>>0,7);const r=()=>(a=(a*1664525+1013904223)>>>0)/4294967296,ix=QB.map((_,i)=>i);
  for(let i=ix.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[ix[i],ix[j]]=[ix[j],ix[i]]}return ix.slice(0,NQ)}   // mesma ordem para toda a turma
 async function join(){const n=$('#jName').value.trim(),s=$('#jCode').value.trim().toUpperCase(),m=$('#jMsg'),k=slug(n);m.textContent='';
  if(n.length<2||!k||!s){m.textContent='Digite seu nome e o código da turma.';return}
- try{const meta=await api(`turmas/${s}/meta`,'GET');if(!meta){m.textContent='Turma não encontrada. Confira o código com o professor.';return}
+ try{const meta=await api(`turmas/${s}/meta`,'GET');if(!meta){m.textContent=DB?'Turma não encontrada. Confira o código com o professor.':'Este link não tem o banco de dados da turma. O professor precisa configurar o Firebase (não pode usar o modo teste) e gerar um novo QR Code.';return}
   let rec=await api(`turmas/${s}/alunos/${k}`,'GET');
   if(rec&&rec.id!==ID){m.textContent='Já existe alguém com este nome na turma. Use nome e sobrenome.';return}
   if(!rec){if(meta.estado==='fim'){m.textContent='Este quiz já foi encerrado pelo professor.';return}rec={id:ID,n,p:0,h:0,q:0,t:0,fim:0};await api(`turmas/${s}/alunos/${k}`,'PUT',rec)}
